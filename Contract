@@ -1,0 +1,68 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract SavingsVault {
+
+    address public owner;
+
+    // Mapping to track each user's balance
+    mapping(address => uint256) public balances;
+
+    // Events for depositing and withdrawing
+    event Deposited(address indexed user, uint256 amount);
+    event Withdrawn(address indexed user, uint256 amount);
+
+    // Modifier to ensure only the owner can perform certain actions
+    modifier onlyOwner() {
+        require(msg.sender == owner, "You are not the owner!");
+        _;
+    }
+
+    // Constructor to set the contract owner
+    constructor() {
+        owner = msg.sender;
+    }
+
+    // Deposit ETH into the savings vault
+    function deposit() external payable {
+        require(msg.value > 0, "You must deposit some ETH");
+
+        // Add the deposited amount to the sender's balance
+        balances[msg.sender] += msg.value;
+
+        // Emit the Deposited event
+        emit Deposited(msg.sender, msg.value);
+    }
+
+    // Withdraw ETH from the savings vault
+    function withdraw(uint256 amount) external {
+        require(balances[msg.sender] >= amount, "Insufficient balance");
+
+        // Reduce the user's balance by the withdrawal amount
+        balances[msg.sender] -= amount;
+
+        // Transfer the ETH back to the user
+        payable(msg.sender).transfer(amount);
+
+        // Emit the Withdrawn event
+        emit Withdrawn(msg.sender, amount);
+    }
+
+    // Owner can withdraw the contract's balance (all users' deposits combined)
+    function ownerWithdraw(uint256 amount) external onlyOwner {
+        require(address(this).balance >= amount, "Insufficient contract balance");
+
+        // Transfer ETH to the owner
+        payable(owner).transfer(amount);
+    }
+
+    // View function to check the contract's total balance
+    function getContractBalance() external view returns (uint256) {
+        return address(this).balance;
+    }
+
+    // View function to check an individual's balance
+    function getUserBalance(address user) external view returns (uint256) {
+        return balances[user];
+    }
+}
